@@ -1,0 +1,142 @@
+[
+  {
+    "id": "chunk_1",
+    "ts": 1000,
+    "text": "Welcome to today's lecture on advanced calculus. We'll be covering the fundamental theorem of calculus and its applications.",
+    "speaker": "Professor Smith",
+    "confidence": 0.95
+  },
+  {
+    "id": "chunk_2",
+    "ts": 15000,
+    "text": "Let's start with the basic definition. The fundamental theorem states that if f is continuous on [a, b], then the integral from a to b of f'(x) dx equals f(b) - f(a).",
+    "speaker": "Professor Smith",
+    "confidence": 0.92
+  },
+  {
+    "id": "chunk_3",
+    "ts": 30000,
+    "text": "This is a profound result that connects differentiation and integration in a beautiful way.",
+    "speaker": "Professor Smith",
+    "confidence": 0.88
+  },
+  {
+    "id": "chunk_4",
+    "ts": 35000,
+    "text": "Can someone explain why this theorem is so important?",
+    "speaker": "Student",
+    "confidence": 0.85
+  },
+  {
+    "id": "chunk_5",
+    "ts": 40000,
+    "text": "Excellent question! The fundamental theorem allows us to evaluate definite integrals without using the limit definition.",
+    "speaker": "Professor Smith",
+    "confidence": 0.94
+  },
+  {
+    "id": "chunk_6",
+    "ts": 55000,
+    "text": "Let's work through an example. Find the integral from 0 to 2 of 3x² dx.",
+    "speaker": "Professor Smith",
+    "confidence": 0.91
+  },
+  {
+    "id": "chunk_7",
+    "ts": 70000,
+    "text": "First, we find the antiderivative: F(x) = x³. Then we evaluate F(2) - F(0) = 8 - 0 = 8.",
+    "speaker": "Professor Smith",
+    "confidence": 0.93
+  },
+  {
+    "id": "chunk_8",
+    "ts": 85000,
+    "text": "Notice how much simpler this is compared to using Riemann sums!",
+    "speaker": "Professor Smith",
+    "confidence": 0.89
+  },
+  {
+    "id": "chunk_9",
+    "ts": 100000,
+    "text": "Now let's consider the second part of the fundamental theorem. If F(x) = integral from a to x of f(t) dt, then F'(x) = f(x).",
+    "speaker": "Professor Smith",
+    "confidence": 0.96
+  },
+  {
+    "id": "chunk_10",
+    "ts": 120000,
+    "text": "This means that every continuous function has an antiderivative, and the derivative of an integral gives us back the original function.",
+    "speaker": "Professor Smith",
+    "confidence": 0.87
+  },
+  {
+    "id": "chunk_11",
+    "ts": 135000,
+    "text": "Let's apply this to find the derivative of the integral from 0 to x of sin(t²) dt.",
+    "speaker": "Professor Smith",
+    "confidence": 0.92
+  },
+  {
+    "id": "chunk_12",
+    "ts": 150000,
+    "text": "By the fundamental theorem, this derivative is simply sin(x²).",
+    "speaker": "Professor Smith",
+    "confidence": 0.94
+  },
+  {
+    "id": "chunk_13",
+    "ts": 165000,
+    "text": "This is incredibly powerful for solving differential equations and understanding the relationship between functions and their integrals.",
+    "speaker": "Professor Smith",
+    "confidence": 0.90
+  },
+  {
+    "id": "chunk_14",
+    "ts": 180000,
+    "text": "Are there any questions about the fundamental theorem before we move on to applications?",
+    "speaker": "Professor Smith",
+    "confidence": 0.88
+  },
+  {
+    "id": "chunk_15",
+    "ts": 195000,
+    "text": "What about functions that aren't continuous? Do they still have antiderivatives?",
+    "speaker": "Student",
+    "confidence": 0.86
+  },
+  {
+    "id": "chunk_16",
+    "ts": 210000,
+    "text": "Great question! Functions with jump discontinuities don't have antiderivatives in the traditional sense, but we can extend the concept using generalized functions.",
+    "speaker": "Professor Smith",
+    "confidence": 0.91
+  },
+  {
+    "id": "chunk_17",
+    "ts": 225000,
+    "text": "However, for our purposes in this course, we'll focus on continuous functions where the fundamental theorem applies directly.",
+    "speaker": "Professor Smith",
+    "confidence": 0.89
+  },
+  {
+    "id": "chunk_18",
+    "ts": 240000,
+    "text": "Now let's look at some applications. The fundamental theorem is crucial in physics, especially in mechanics and thermodynamics.",
+    "speaker": "Professor Smith",
+    "confidence": 0.93
+  },
+  {
+    "id": "chunk_19",
+    "ts": 255000,
+    "text": "For example, when we calculate work done by a variable force, we use the integral of force with respect to displacement.",
+    "speaker": "Professor Smith",
+    "confidence": 0.87
+  },
+  {
+    "id": "chunk_20",
+    "ts": 270000,
+    "text": "The fundamental theorem tells us that this work equals the change in potential energy, which is a fundamental principle in physics.",
+    "speaker": "Professor Smith",
+    "confidence": 0.92
+  }
+]

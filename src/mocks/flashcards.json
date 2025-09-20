@@ -1,0 +1,92 @@
+[
+  {
+    "id": "card_1",
+    "front": "What is the fundamental theorem of calculus?",
+    "back": "The fundamental theorem states that if f is continuous on [a, b], then ∫[a,b] f'(x) dx = f(b) - f(a). It connects differentiation and integration.",
+    "tags": ["calculus", "fundamental-theorem"],
+    "difficulty": "medium",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_2",
+    "front": "What is the second part of the fundamental theorem?",
+    "back": "If F(x) = ∫[a,x] f(t) dt, then F'(x) = f(x). This means the derivative of an integral gives us back the original function.",
+    "tags": ["calculus", "fundamental-theorem"],
+    "difficulty": "medium",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_3",
+    "front": "Find the antiderivative of 3x²",
+    "back": "The antiderivative of 3x² is x³ + C, where C is the constant of integration.",
+    "tags": ["calculus", "antiderivatives"],
+    "difficulty": "easy",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_4",
+    "front": "Evaluate ∫[0,2] 3x² dx using the fundamental theorem",
+    "back": "F(x) = x³, so F(2) - F(0) = 8 - 0 = 8",
+    "tags": ["calculus", "definite-integrals"],
+    "difficulty": "easy",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_5",
+    "front": "What is d/dx ∫[0,x] sin(t²) dt?",
+    "back": "By the second fundamental theorem, this equals sin(x²).",
+    "tags": ["calculus", "fundamental-theorem"],
+    "difficulty": "hard",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_6",
+    "front": "How does the fundamental theorem relate to physics?",
+    "back": "It's used to calculate work done by variable forces: Work = ∫ F(x) dx = ΔPE (change in potential energy).",
+    "tags": ["calculus", "physics", "applications"],
+    "difficulty": "medium",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_7",
+    "front": "What conditions must be met for the fundamental theorem to apply?",
+    "back": "The function f must be continuous on the interval [a, b].",
+    "tags": ["calculus", "fundamental-theorem", "conditions"],
+    "difficulty": "easy",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_8",
+    "front": "Why is the fundamental theorem considered 'fundamental'?",
+    "back": "It establishes the deep connection between differentiation and integration, showing they are inverse operations.",
+    "tags": ["calculus", "fundamental-theorem", "concepts"],
+    "difficulty": "medium",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_9",
+    "front": "What happens if a function has jump discontinuities?",
+    "back": "The fundamental theorem doesn't apply directly. We need to use generalized functions or break the integral into continuous pieces.",
+    "tags": ["calculus", "discontinuities", "advanced"],
+    "difficulty": "hard",
+    "reviewCount": 0,
+    "correctCount": 0
+  },
+  {
+    "id": "card_10",
+    "front": "Give an example of how the fundamental theorem simplifies integration",
+    "back": "Instead of using Riemann sums to evaluate ∫[0,2] 3x² dx, we can find the antiderivative x³ and evaluate F(2) - F(0) = 8.",
+    "tags": ["calculus", "examples", "applications"],
+    "difficulty": "medium",
+    "reviewCount": 0,
+    "correctCount": 0
+  }
+]

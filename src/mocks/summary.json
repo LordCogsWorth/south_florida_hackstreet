@@ -1,0 +1,61 @@
+{
+  "id": "summary_1",
+  "bullets": [
+    {
+      "id": "bullet_1",
+      "text": "The fundamental theorem of calculus connects differentiation and integration through two main parts",
+      "importance": "high",
+      "sourceTs": 15000
+    },
+    {
+      "id": "bullet_2",
+      "text": "First part: ∫[a,b] f'(x) dx = f(b) - f(a) for continuous functions f on [a,b]",
+      "importance": "high",
+      "sourceTs": 30000
+    },
+    {
+      "id": "bullet_3",
+      "text": "Second part: If F(x) = ∫[a,x] f(t) dt, then F'(x) = f(x)",
+      "importance": "high",
+      "sourceTs": 100000
+    },
+    {
+      "id": "bullet_4",
+      "text": "The theorem allows evaluation of definite integrals without using limit definitions",
+      "importance": "medium",
+      "sourceTs": 40000
+    },
+    {
+      "id": "bullet_5",
+      "text": "Example: ∫[0,2] 3x² dx = F(2) - F(0) = 8 - 0 = 8, where F(x) = x³",
+      "importance": "medium",
+      "sourceTs": 70000
+    },
+    {
+      "id": "bullet_6",
+      "text": "Applications include physics problems involving work and potential energy",
+      "importance": "medium",
+      "sourceTs": 240000
+    },
+    {
+      "id": "bullet_7",
+      "text": "The theorem requires continuity of the function on the integration interval",
+      "importance": "medium",
+      "sourceTs": 210000
+    },
+    {
+      "id": "bullet_8",
+      "text": "Functions with jump discontinuities require special treatment or generalized functions",
+      "importance": "low",
+      "sourceTs": 210000
+    }
+  ],
+  "keyTopics": [
+    "Fundamental Theorem of Calculus",
+    "Definite Integrals",
+    "Antiderivatives",
+    "Physics Applications",
+    "Continuity Requirements"
+  ],
+  "createdAt": "2024-01-15T10:30:00Z"
+}

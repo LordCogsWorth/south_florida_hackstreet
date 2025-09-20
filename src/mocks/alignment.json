@@ -1,0 +1,76 @@
+{
+  "missing": [
+    {
+      "id": "missing_1",
+      "text": "The fundamental theorem states that if f is continuous on [a, b], then the integral from a to b of f'(x) dx equals f(b) - f(a)",
+      "source": "transcript",
+      "sourceTs": 15000,
+      "confidence": 0.95
+    },
+    {
+      "id": "missing_2",
+      "text": "This is a profound result that connects differentiation and integration in a beautiful way",
+      "source": "transcript",
+      "sourceTs": 30000,
+      "confidence": 0.88
+    },
+    {
+      "id": "missing_3",
+      "text": "Example: Find the integral from 0 to 2 of 3x² dx. First, we find the antiderivative: F(x) = x³. Then we evaluate F(2) - F(0) = 8 - 0 = 8",
+      "source": "transcript",
+      "sourceTs": 70000,
+      "confidence": 0.93
+    },
+    {
+      "id": "missing_4",
+      "text": "Second part of the fundamental theorem: If F(x) = integral from a to x of f(t) dt, then F'(x) = f(x)",
+      "source": "transcript",
+      "sourceTs": 100000,
+      "confidence": 0.96
+    },
+    {
+      "id": "missing_5",
+      "text": "Physics Applications: Work = ∫ F(x) dx = ΔPE (change in potential energy)",
+      "source": "snapshot",
+      "sourceTs": 180000,
+      "confidence": 0.87
+    }
+  ],
+  "matched": [
+    {
+      "id": "matched_1",
+      "excerpt": "fundamental theorem of calculus",
+      "sourceTs": 1000,
+      "source": "transcript"
+    },
+    {
+      "id": "matched_2",
+      "excerpt": "applications in physics",
+      "sourceTs": 240000,
+      "source": "transcript"
+    },
+    {
+      "id": "matched_3",
+      "excerpt": "continuous functions",
+      "sourceTs": 15000,
+      "source": "transcript"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "suggestion_1",
+      "text": "Consider adding the mathematical notation for the fundamental theorem",
+      "reason": "This would make your notes more precise and easier to reference"
+    },
+    {
+      "id": "suggestion_2",
+      "text": "Include the example calculation to illustrate the theorem's application",
+      "reason": "Examples help solidify understanding of abstract concepts"
+    },
+    {
+      "id": "suggestion_3",
+      "text": "Add notes about the continuity requirement",
+      "reason": "This is an important condition that students often overlook"
+    }
+  ]
+}

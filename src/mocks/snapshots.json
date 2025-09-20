@@ -1,0 +1,98 @@
+[
+  {
+    "id": "snapshot_1",
+    "ts": 15000,
+    "thumbnailUrl": "/mock/whiteboard-1-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-1-full.jpg",
+    "ocr": "Fundamental Theorem of Calculus\n∫[a,b] f'(x) dx = f(b) - f(a)",
+    "markers": [
+      {
+        "id": "marker_1",
+        "x": 100,
+        "y": 50,
+        "label": "Key Formula",
+        "color": "#ef4444"
+      }
+    ]
+  },
+  {
+    "id": "snapshot_2",
+    "ts": 30000,
+    "thumbnailUrl": "/mock/whiteboard-2-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-2-full.jpg",
+    "ocr": "Definition: If f is continuous on [a,b]\nThen ∫[a,b] f'(x) dx = f(b) - f(a)",
+    "markers": []
+  },
+  {
+    "id": "snapshot_3",
+    "ts": 55000,
+    "thumbnailUrl": "/mock/whiteboard-3-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-3-full.jpg",
+    "ocr": "Example: ∫[0,2] 3x² dx\nF(x) = x³\nF(2) - F(0) = 8 - 0 = 8",
+    "markers": [
+      {
+        "id": "marker_2",
+        "x": 200,
+        "y": 150,
+        "label": "Example",
+        "color": "#3b82f6"
+      }
+    ]
+  },
+  {
+    "id": "snapshot_4",
+    "ts": 100000,
+    "thumbnailUrl": "/mock/whiteboard-4-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-4-full.jpg",
+    "ocr": "Second Part:\nF(x) = ∫[a,x] f(t) dt\nThen F'(x) = f(x)",
+    "markers": []
+  },
+  {
+    "id": "snapshot_5",
+    "ts": 135000,
+    "thumbnailUrl": "/mock/whiteboard-5-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-5-full.jpg",
+    "ocr": "Application:\nd/dx ∫[0,x] sin(t²) dt = sin(x²)",
+    "markers": [
+      {
+        "id": "marker_3",
+        "x": 150,
+        "y": 100,
+        "label": "Application",
+        "color": "#10b981"
+      }
+    ]
+  },
+  {
+    "id": "snapshot_6",
+    "ts": 180000,
+    "thumbnailUrl": "/mock/whiteboard-6-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-6-full.jpg",
+    "ocr": "Physics Applications:\nWork = ∫ F(x) dx\nΔPE = Work",
+    "markers": []
+  },
+  {
+    "id": "snapshot_7",
+    "ts": 240000,
+    "thumbnailUrl": "/mock/whiteboard-7-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-7-full.jpg",
+    "ocr": "Summary:\n1. ∫[a,b] f'(x) dx = f(b) - f(a)\n2. d/dx ∫[a,x] f(t) dt = f(x)",
+    "markers": [
+      {
+        "id": "marker_4",
+        "x": 50,
+        "y": 200,
+        "label": "Summary",
+        "color": "#f59e0b"
+      }
+    ]
+  },
+  {
+    "id": "snapshot_8",
+    "ts": 270000,
+    "thumbnailUrl": "/mock/whiteboard-8-thumb.jpg",
+    "fullUrl": "/mock/whiteboard-8-full.jpg",
+    "ocr": "Next: Applications in\n- Mechanics\n- Thermodynamics\n- Probability",
+    "markers": []
+  }
+]

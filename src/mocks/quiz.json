@@ -1,0 +1,99 @@
+[
+  {
+    "id": "quiz_1",
+    "prompt": "What is the fundamental theorem of calculus?",
+    "choices": [
+      "∫[a,b] f'(x) dx = f(b) - f(a)",
+      "∫[a,b] f(x) dx = F(b) - F(a)",
+      "f'(x) = lim(h→0) [f(x+h) - f(x)]/h",
+      "∫ f(x) dx = F(x) + C"
+    ],
+    "answerIndex": 0,
+    "explanation": "The fundamental theorem states that the integral of a derivative equals the difference in function values at the endpoints.",
+    "difficulty": "medium",
+    "tags": ["fundamental-theorem"]
+  },
+  {
+    "id": "quiz_2",
+    "prompt": "Evaluate ∫[0,2] 3x² dx using the fundamental theorem.",
+    "choices": ["6", "8", "12", "16"],
+    "answerIndex": 1,
+    "explanation": "F(x) = x³, so F(2) - F(0) = 8 - 0 = 8",
+    "difficulty": "easy",
+    "tags": ["definite-integrals"]
+  },
+  {
+    "id": "quiz_3",
+    "prompt": "What is d/dx ∫[0,x] sin(t²) dt?",
+    "choices": ["sin(x²)", "cos(x²)", "2x sin(x²)", "sin(x²) + C"],
+    "answerIndex": 0,
+    "explanation": "By the second fundamental theorem, the derivative of an integral with variable upper limit equals the integrand evaluated at the upper limit.",
+    "difficulty": "hard",
+    "tags": ["second-fundamental-theorem"]
+  },
+  {
+    "id": "quiz_4",
+    "prompt": "Which condition must be met for the fundamental theorem to apply?",
+    "choices": [
+      "f must be differentiable",
+      "f must be continuous",
+      "f must be bounded",
+      "f must be positive"
+    ],
+    "answerIndex": 1,
+    "explanation": "The function f must be continuous on the interval [a, b] for the fundamental theorem to apply.",
+    "difficulty": "easy",
+    "tags": ["conditions"]
+  },
+  {
+    "id": "quiz_5",
+    "prompt": "What is the antiderivative of 3x²?",
+    "choices": ["6x + C", "x³ + C", "3x³ + C", "x³/3 + C"],
+    "answerIndex": 1,
+    "explanation": "The antiderivative of 3x² is x³ + C, where C is the constant of integration.",
+    "difficulty": "easy",
+    "tags": ["antiderivatives"]
+  },
+  {
+    "id": "quiz_6",
+    "prompt": "How does the fundamental theorem relate to physics?",
+    "choices": [
+      "It calculates velocity from acceleration",
+      "It relates work to potential energy",
+      "It determines momentum",
+      "It measures temperature"
+    ],
+    "answerIndex": 1,
+    "explanation": "In physics, work = ∫ F(x) dx = ΔPE (change in potential energy), which is a direct application of the fundamental theorem.",
+    "difficulty": "medium",
+    "tags": ["physics", "applications"]
+  },
+  {
+    "id": "quiz_7",
+    "prompt": "What is the second part of the fundamental theorem?",
+    "choices": [
+      "∫[a,b] f'(x) dx = f(b) - f(a)",
+      "If F(x) = ∫[a,x] f(t) dt, then F'(x) = f(x)",
+      "∫ f(x) dx = F(x) + C",
+      "f'(x) = lim(h→0) [f(x+h) - f(x)]/h"
+    ],
+    "answerIndex": 1,
+    "explanation": "The second part states that if F(x) = ∫[a,x] f(t) dt, then F'(x) = f(x).",
+    "difficulty": "medium",
+    "tags": ["second-fundamental-theorem"]
+  },
+  {
+    "id": "quiz_8",
+    "prompt": "Why is the fundamental theorem considered 'fundamental'?",
+    "choices": [
+      "It's the first theorem taught",
+      "It connects differentiation and integration",
+      "It's the most difficult theorem",
+      "It only applies to polynomials"
+    ],
+    "answerIndex": 1,
+    "explanation": "It's fundamental because it establishes the deep connection between differentiation and integration, showing they are inverse operations.",
+    "difficulty": "medium",
+    "tags": ["concepts"]
+  }
+]

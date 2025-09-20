@@ -1,0 +1,77 @@
+[
+  {
+    "snapshotId": "snapshot_3",
+    "steps": [
+      {
+        "id": "step_1",
+        "title": "Identify the Function",
+        "body": "We need to find the integral of 3x² from 0 to 2. The function f(x) = 3x² is a polynomial function.",
+        "type": "explanation"
+      },
+      {
+        "id": "step_2",
+        "title": "Find the Antiderivative",
+        "body": "The antiderivative of 3x² is F(x) = x³ + C. Since we're dealing with a definite integral, the constant C will cancel out.",
+        "type": "equation"
+      },
+      {
+        "id": "step_3",
+        "title": "Apply the Fundamental Theorem",
+        "body": "Using the fundamental theorem: ∫[0,2] 3x² dx = F(2) - F(0) = (2)³ - (0)³ = 8 - 0 = 8",
+        "type": "equation"
+      },
+      {
+        "id": "step_4",
+        "title": "Verify the Result",
+        "body": "We can verify this by taking the derivative of our result: d/dx(x³) = 3x², which matches our original function.",
+        "type": "explanation"
+      }
+    ]
+  },
+  {
+    "snapshotId": "snapshot_5",
+    "steps": [
+      {
+        "id": "step_5",
+        "title": "Understand the Problem",
+        "body": "We want to find the derivative of an integral with a variable upper limit. This is a direct application of the second part of the fundamental theorem.",
+        "type": "explanation"
+      },
+      {
+        "id": "step_6",
+        "title": "Apply the Second Fundamental Theorem",
+        "body": "If F(x) = ∫[a,x] f(t) dt, then F'(x) = f(x). In our case, f(t) = sin(t²), so F'(x) = sin(x²).",
+        "type": "equation"
+      },
+      {
+        "id": "step_7",
+        "title": "Interpret the Result",
+        "body": "This means that the rate of change of the area under the curve y = sin(t²) from 0 to x is equal to the value of the function at x.",
+        "type": "explanation"
+      }
+    ]
+  },
+  {
+    "snapshotId": "snapshot_6",
+    "steps": [
+      {
+        "id": "step_8",
+        "title": "Physical Context",
+        "body": "In physics, work is defined as the integral of force with respect to displacement. This connects directly to the fundamental theorem of calculus.",
+        "type": "explanation"
+      },
+      {
+        "id": "step_9",
+        "title": "Mathematical Relationship",
+        "body": "Work = ∫ F(x) dx = ΔPE (change in potential energy). This is a fundamental principle in classical mechanics.",
+        "type": "equation"
+      },
+      {
+        "id": "step_10",
+        "title": "Real-World Applications",
+        "body": "This principle is used in calculating the work done by springs, gravitational forces, and electric fields in physics problems.",
+        "type": "explanation"
+      }
+    ]
+  }
+]
