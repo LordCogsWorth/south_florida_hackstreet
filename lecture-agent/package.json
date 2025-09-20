@@ -1,0 +1,42 @@
+{
+  "name": "lecture-board-analyst",
+  "version": "1.0.0",
+  "description": "AI-powered lecture video analysis with whiteboard detection and OCR",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": ["lecture", "analysis", "ocr", "whiteboard", "ai", "video"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "fluent-ffmpeg": "^2.1.2",
+    "tesseract.js": "^5.0.2",
+    "sharp": "^0.32.6",
+    "uuid": "^9.0.1",
+    "openai": "^4.20.1",
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "ssim.js": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/express": "^4.17.20",
+    "@types/multer": "^1.4.8",
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/uuid": "^9.0.6",
+    "typescript": "^5.2.2",
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
