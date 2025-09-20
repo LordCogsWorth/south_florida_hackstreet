@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>WebXR Recorder</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="ui" class="ui">
+      <div class="row">
+        <button id="btnEnterAR" class="btn">Enter Passthrough</button>
+        <button id="btnStartStop" class="btn btn-primary">Start Recording</button>
+        <label class="checkbox">
+          <input type="checkbox" id="chkMic" checked>
+          <span>Mic Audio</span>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="chkPreview">
+          <span>Preview</span>
+        </label>
+      </div>
+      <div class="row">
+        <span id="recBadge" class="badge rec hidden">REC</span>
+        <span id="status" class="status">Idle</span>
+      </div>
+      <div class="row">
+        <button id="btnReplay" class="btn" disabled>Replay Last</button>
+        <a id="btnDownload" class="btn" href="#" download="webxr-recording.webm" aria-disabled="true">Download</a>
+        <button id="btnCancel" class="btn" disabled>Cancel Recording</button>
+      </div>
+      <div class="row small">
+        <span>Desktop: Uses webcam as background when AR isn't available.</span>
+      </div>
+      <div class="row small">
+        <span>Note: AR recording captures virtual content only.</span>
+      </div>
+    </div>
+
+    <aside id="recordHud" class="record-hud hidden" aria-hidden="true" aria-live="polite">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="hudMic" class="mic" aria-label="Microphone enabled" title="Mic enabled">
+        <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" fill="currentColor"/>
+        </svg>
+      </span>
+    </aside>
+
+    <main id="app"></main>
+
+    <section id="replayPanel" class="replay hidden">
+      <video id="playback" controls playsinline></video>
+    </section>
+
+    <aside id="previewContainer" class="preview hidden" aria-live="off" aria-hidden="true">
+      <video id="livePreview" muted playsinline></video>
+    </aside>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+  </html>
+
+

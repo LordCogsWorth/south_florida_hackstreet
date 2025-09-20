@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>WebXR Recorder - Desktop Webcam</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="ui" class="ui">
+      <div class="row">
+        <button id="btnEnterVR" class="btn">Enter VR</button>
+        <button id="btnEnterAR" class="btn">Enter Passthrough</button>
+        <button id="btnStartStop" class="btn btn-primary">Start Recording</button>
+        <label class="checkbox">
+          <input type="checkbox" id="chkMic" checked>
+          <span>Mic Audio</span>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="chkPreview">
+          <span>Preview</span>
+        </label>
+      </div>
+      <div class="row">
+        <span id="recBadge" class="badge rec hidden">REC</span>
+        <span id="status" class="status">Idle</span>
+      </div>
+      <div class="row">
+        <button id="btnReplay" class="btn" disabled>Replay Last</button>
+        <a id="btnDownload" class="btn" href="#" download="webxr-recording.webm" aria-disabled="true">Download</a>
+      </div>
+      <div class="row small">
+        <span>Desktop: Webcam is used as background if AR is unavailable.</span>
+      </div>
+    </div>
+
+    <main id="app"></main>
+
+    <section id="replayPanel" class="replay hidden">
+      <video id="playback" controls playsinline></video>
+    </section>
+
+    <aside id="previewContainer" class="preview hidden" aria-live="off" aria-hidden="true">
+      <video id="livePreview" muted playsinline></video>
+    </aside>
+
+    <script type="module" src="./src/frontend.js"></script>
+  </body>
+  </html>
+
+
