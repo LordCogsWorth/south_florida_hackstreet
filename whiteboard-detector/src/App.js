@@ -1,1170 +1,732 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { useRef, useState } from 'react';
-import Tesseract from 'tesseract.js';
 import './App.css';
 
 function App() {
-  const [videoFile, setVideoFile] = useState(null);
-  const [videoURL, setVideoURL] = useState(null);
-  const [screenshots, setScreenshots] = useState([]);
-  const [isDetecting, setIsDetecting] = useState(false);
-  const [detectedText, setDetectedText] = useState('');
-  const [ocrWorker, setOcrWorker] = useState(null);
-  const [apiKey, setApiKey] = useState(process.env.REACT_APP_OPENAI_API_KEY || '');
-  const [isUsingChatGPT, setIsUsingChatGPT] = useState(false);
-  const [chatGPTResult, setChatGPTResult] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState('');
+  const [question, setQuestion] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
+  const [edithResponse, setEdithResponse] = useState('');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [boardScreenshot, setBoardScreenshot] = useState(null);
   
-  // AI Vision Analysis Results
-  const [aiAnalysisResult, setAiAnalysisResult] = useState('');
-  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
-  
-  // Rate limiting and conversation state
-  const [lastApiCall, setLastApiCall] = useState(0);
-  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
-  const [conversationHistory, setConversationHistory] = useState([]);
-  const [userQuestion, setUserQuestion] = useState('');
-  const [apiKeyStatus, setApiKeyStatus] = useState('unchecked'); // unchecked, valid, invalid
-  
-  // Test API key validity
-  const testApiKey = async () => {
-    if (!apiKey) {
-      setApiKeyStatus('invalid');
-      return;
-    }
-    
-    try {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`
-        }
-      });
-      
-      if (response.ok) {
-        setApiKeyStatus('valid');
-        console.log('✅ API key is valid');
-      } else {
-        setApiKeyStatus('invalid');
-        console.log('❌ API key is invalid');
-      }
-    } catch (error) {
-      setApiKeyStatus('invalid');
-      console.log('❌ API key test failed:', error);
-    }
-  };
-  
-  // Backend integration state
-  const [isUsingBackend, setIsUsingBackend] = useState(false);
-  const [lectureId, setLectureId] = useState('');
-  const [uploadProgress, setUploadProgress] = useState('');
-  const [processingStatus, setProcessingStatus] = useState('');
-  const [queryText, setQueryText] = useState('');
-  const [queryResult, setQueryResult] = useState('');
-  const [isQuerying, setIsQuerying] = useState(false);
-  const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  // Initialize OCR worker with handwriting optimizations
-  const initializeOCR = async () => {
-    if (ocrWorker) return ocrWorker;
-    
+  // Initialize Gemini AI
+  // Initialize Gemini AI
+  const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY || 'AIzaSyAx5fKagWqc9APEHtFHkguhJHhhDqZ_3Bk');
+
+  // Test API key function
+  const testApiKey = async () => {
+    setIsAnalyzing(true);
     try {
-      console.log('Starting OCR initialization...');
-      const worker = await Tesseract.createWorker('eng', 1, {
-        logger: m => console.log('OCR Logger:', m)
-      });
-      
-      // Configure for better handwriting recognition
-      await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?()[]{}=-+*/\'"@#$%^&_|\\~ ',
-        tessedit_pageseg_mode: '6', // Uniform block of text
-        preserve_interword_spaces: '1',
-        tessedit_do_invert: '0'
-      });
-      
-      console.log('OCR worker created successfully');
-      setOcrWorker(worker);
-      return worker;
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent("Test: Please respond with 'API key is working correctly! ✅'");
+      const response = await result.response;
+      const responseText = response.text();
+      console.log('API Key Test Result:', responseText);
+      setAnalysisResult(`🔑 API Key Test Result:\n\n${responseText}\n\n✅ Your Google Gemini API key is working correctly! You can now analyze videos and ask questions.`);
     } catch (error) {
-      console.error('OCR initialization failed:', error);
-      setDetectedText('OCR initialization failed: ' + error.message);
-      return null;
+      console.error('API Key Test Failed:', error);
+      setAnalysisResult(`❌ API Key Test Failed:\n\n${error.message}\n\n🔧 Please check:\n• API key is correct: AIzaSyAx5fKagWqc9APEHtFHkguhJHhhDqZ_3Bk\n• Internet connection is working\n• Google Gemini API is enabled for your project`);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  // Handle video file upload
-  const handleFileUpload = async (event) => {
+  const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('video/')) {
-      setVideoFile(file);
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
-      setVideoURL(url);
-      setScreenshots([]);
-      setDetectedText('');
-      setOcrWorker(null); // Reset worker for new video
-      setLectureId('');
-      setProcessingStatus('');
-      setQueryResult('');
-      
-      // If using backend, upload and process the video
-      if (isUsingBackend) {
-        try {
-          setUploadProgress('Uploading video to backend...');
-          const uploadResult = await uploadVideoToBackend(file);
-          console.log('Upload result:', uploadResult);
-          
-          setUploadProgress('Upload complete! Processing video...');
-          const processResult = await processVideoWithBackend(
-            uploadResult.video.path, 
-            file.name
-          );
-          console.log('Process result:', processResult);
-          
-          setLectureId(processResult.lectureId);
-          setProcessingStatus(`Processing started. Lecture ID: ${processResult.lectureId}`);
-          setUploadProgress('');
-        } catch (error) {
-          console.error('Backend upload/processing failed:', error);
-          setUploadProgress(`Error: ${error.message}`);
-        }
-      } else {
-        // Initialize OCR for local processing
-        setTimeout(() => {
-          initializeOCR();
-        }, 1000);
+      if (videoRef.current) {
+        videoRef.current.src = url;
       }
     } else {
-      alert('Please select a valid video file');
+      alert('Please select a video file');
     }
   };
 
-  // Take a screenshot of current video frame
-  const takeScreenshot = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    // Set canvas size to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convert to blob and create screenshot object
-    canvas.toBlob((blob) => {
-      const screenshot = {
-        id: Date.now(),
-        blob: blob,
-        url: URL.createObjectURL(blob),
-        timestamp: video.currentTime,
-        detectedText: detectedText || 'No text detected'
-      };
-      setScreenshots(prev => [...prev, screenshot]);
-    }, 'image/png');
-  };
-
-  // Image preprocessing for better OCR
-  const preprocessImage = (canvas, ctx) => {
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+  const analyzeVideo = async () => {
+    if (!selectedFile) {
+      alert('Please select a video file first');
+      return;
+    }
+    setIsAnalyzing(true);
     
-    // Convert to grayscale and enhance contrast
-    for (let i = 0; i < data.length; i += 4) {
-      // Convert to grayscale
-      const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-      
-      // Enhance contrast - make text darker and background lighter
-      let enhanced;
-      if (gray < 128) {
-        // Dark pixels (likely text) - make darker
-        enhanced = Math.max(0, gray - 30);
-      } else {
-        // Light pixels (likely background) - make lighter
-        enhanced = Math.min(255, gray + 30);
-      }
-      
-      // Apply threshold for better text separation
-      const threshold = enhanced < 100 ? 0 : 255;
-      
-      data[i] = threshold;     // Red
-      data[i + 1] = threshold; // Green
-      data[i + 2] = threshold; // Blue
-      // Alpha channel (data[i + 3]) remains unchanged
-    }
-    
-    ctx.putImageData(imageData, 0, 0);
-    return canvas;
-  };
-
-  // OCR text detection with preprocessing
-  const detectText = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setDetectedText('Video or canvas not available');
-      return;
-    }
-
-    setIsDetecting(true);
-    setDetectedText('Initializing OCR...');
-
     try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-
-      // Set canvas size and draw current frame
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        setDetectedText('Video not loaded properly');
-        setIsDetecting(false);
-        return;
-      }
-
-      // Draw video frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      setDetectedText('Preprocessing image for handwriting...');
-
-      // Apply image preprocessing for better OCR
-      preprocessImage(canvas, ctx);
-
-      // Get or initialize OCR worker
-      let worker = ocrWorker;
-      if (!worker) {
-        worker = await initializeOCR();
-      }
-
-      if (worker) {
-        setDetectedText('Running enhanced OCR...');
-        
-        // Convert processed canvas to data URL and run OCR
-        const dataURL = canvas.toDataURL('image/png');
-        
-        const { data: { text, confidence } } = await worker.recognize(dataURL, {
-          rectangle: { top: 0, left: 0, width: canvas.width, height: canvas.height }
-        });
-        
-        const cleanText = text.trim() || 'No text detected';
-        const confidenceText = confidence ? ` (Confidence: ${confidence.toFixed(1)}%)` : '';
-        setDetectedText(cleanText + confidenceText);
-        console.log('OCR Result:', cleanText, 'Confidence:', confidence);
-      } else {
-        setDetectedText('OCR worker initialization failed');
-      }
-
-    } catch (error) {
-      console.error('Text detection failed:', error);
-      setDetectedText('Detection failed: ' + error.message);
-    } finally {
-      setIsDetecting(false);
-    }
-  };
-
-  // Enhanced OCR for messy handwriting
-  const detectTextEnhanced = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setDetectedText('Video or canvas not available');
-      return;
-    }
-
-    setIsDetecting(true);
-    setDetectedText('Initializing enhanced handwriting detection...');
-
-    try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-
-      // Set canvas size and draw current frame
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      // Test with a simple text prompt first to verify API key
+      const testResult = await model.generateContent("Hello, can you respond with 'API is working'?");
+      console.log('API Test:', testResult.response.text());
       
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        setDetectedText('Video not loaded properly');
-        setIsDetecting(false);
-        return;
-      }
+      // If we get here, the API key works, now try with video
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64Data = e.target.result.split(',')[1];
+          
+          const prompt = `Analyze this educational video and provide a comprehensive summary focusing on:
 
-      // Draw video frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+1. 📚 MAIN TOPICS: What subjects or concepts are being taught?
+2. 📝 WHITEBOARD CONTENT: Describe any equations, diagrams, text, or drawings visible on whiteboards/screens
+3. 🎯 KEY LEARNING POINTS: What are the main educational objectives?
+4. 🔍 VISUAL ELEMENTS: Describe charts, graphs, mathematical formulas, or visual aids shown
+5. 📖 EDUCATIONAL VALUE: How would this help students learn?
 
-      // Get or initialize OCR worker
-      let worker = ocrWorker;
-      if (!worker) {
-        worker = await initializeOCR();
-      }
+Please provide a detailed, well-structured analysis that would help someone understand what was covered in this educational content.`;
 
-      if (worker) {
-        // Try multiple preprocessing approaches
-        const results = [];
-        
-        // Method 1: High contrast black/white
-        setDetectedText('Method 1: High contrast processing...');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        preprocessImage(canvas, ctx);
-        const dataURL1 = canvas.toDataURL('image/png');
-        
-        await worker.setParameters({
-          tessedit_pageseg_mode: '6', // Uniform block of text
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?()[]{}=-+*/\'"@#$%^&_|\\~ \n'
-        });
-        
-        const result1 = await worker.recognize(dataURL1);
-        results.push({ method: 'High Contrast', text: result1.data.text, confidence: result1.data.confidence });
-
-        // Method 2: Single character mode for individual letters
-        setDetectedText('Method 2: Character-by-character analysis...');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        await worker.setParameters({
-          tessedit_pageseg_mode: '8', // Single character
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        });
-        
-        const dataURL2 = canvas.toDataURL('image/png');
-        const result2 = await worker.recognize(dataURL2);
-        results.push({ method: 'Character Mode', text: result2.data.text, confidence: result2.data.confidence });
-
-        // Method 3: Raw text detection with minimal processing
-        setDetectedText('Method 3: Raw text detection...');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        await worker.setParameters({
-          tessedit_pageseg_mode: '13', // Raw line. Treat the image as a single text line
-          preserve_interword_spaces: '1'
-        });
-        
-        const dataURL3 = canvas.toDataURL('image/png');
-        const result3 = await worker.recognize(dataURL3);
-        results.push({ method: 'Raw Line', text: result3.data.text, confidence: result3.data.confidence });
-
-        // Find best result
-        const bestResult = results.reduce((best, current) => 
-          current.confidence > best.confidence ? current : best
-        );
-
-        // Display all results
-        let displayText = `🏆 BEST (${bestResult.method}): ${bestResult.text}\n\n`;
-        results.forEach(result => {
-          displayText += `${result.method} (${result.confidence?.toFixed(1)}%): ${result.text}\n\n`;
-        });
-
-        setDetectedText(displayText);
-        console.log('Enhanced OCR Results:', results);
-      } else {
-        setDetectedText('OCR worker initialization failed');
-      }
-
-    } catch (error) {
-      console.error('Enhanced text detection failed:', error);
-      setDetectedText('Enhanced detection failed: ' + error.message);
-    } finally {
-      setIsDetecting(false);
-    }
-  };
-
-  // ChatGPT integration for better text interpretation
-  const enhanceWithChatGPT = async (imageDataURL, ocrText) => {
-    if (!apiKey) {
-      setChatGPTResult('Please enter your OpenAI API key first');
-      return;
-    }
-
-    setIsUsingChatGPT(true);
-    setChatGPTResult('Sending to ChatGPT for analysis...');
-
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
+          const result = await model.generateContent([
+            prompt,
             {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `I have handwritten text on a whiteboard that OCR is struggling to read accurately. The OCR detected this text: "${ocrText}". Please look at the image and provide a clean, corrected version of what is actually written. Focus on:
-1. Correcting OCR errors and misread characters
-2. Fixing spacing and formatting
-3. Interpreting unclear handwriting
-4. Organizing the text logically
-5. Only return the corrected text content, nothing else.`
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: imageDataURL
-                  }
-                }
-              ]
+              inlineData: {
+                data: base64Data,
+                mimeType: selectedFile.type
+              }
             }
-          ],
-          max_tokens: 500
-        })
-      });
-
-      if (!response.ok) {
-        let errorMessage = `API error: ${response.status} ${response.statusText}`;
-        
-        if (response.status === 429) {
-          errorMessage = `⚠️ Rate Limit Exceeded (429)\n\nYou've made too many requests to the OpenAI API. This usually means:\n• You've exceeded your API rate limit\n• Your API key has insufficient credits\n• Too many requests in a short time\n\nPlease wait a few minutes and try again, or check your OpenAI account for usage limits.`;
-        } else if (response.status === 401) {
-          errorMessage = `🔑 Authentication Error (401)\n\nYour API key appears to be invalid or expired. Please check:\n• The API key is correct\n• The key has proper permissions\n• Your OpenAI account is in good standing`;
-        } else if (response.status === 400) {
-          errorMessage = `⚠️ Bad Request (400)\n\nThere was an issue with the request format. This might be due to:\n• Image format not supported\n• Request too large\n• Invalid parameters`;
+          ]);
+          
+          const response = await result.response;
+          setAnalysisResult(response.text());
+        } catch (error) {
+          console.error('Analysis error:', error);
+          let errorMessage = `❌ Analysis Error: ${error.message}`;
+          
+          if (error.message.includes('400')) {
+            errorMessage += `\n\n🔧 Possible issues:\n• Invalid API key\n• Unsupported video format\n• File too large\n• Network connectivity issue`;
+          }
+          
+          errorMessage += `\n\nℹ️ Debug info:\n• API Key: ${genAI.apiKey ? 'Set' : 'Missing'}\n• File type: ${selectedFile.type}\n• File size: ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`;
+          
+          setAnalysisResult(errorMessage);
         }
-        
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      const correctedText = data.choices[0]?.message?.content || 'No response from ChatGPT';
-      setChatGPTResult(correctedText);
+      };
       
-      // Update the main detected text with ChatGPT result
-      setDetectedText(`🤖 ChatGPT Enhanced:\n${correctedText}\n\n📝 Original OCR:\n${ocrText}`);
-      
+      reader.readAsDataURL(selectedFile);
     } catch (error) {
-      console.error('ChatGPT API error:', error);
-      setChatGPTResult(`Error: ${error.message}`);
+      console.error('Error:', error);
+      setAnalysisResult(`❌ Error: ${error.message}`);
     } finally {
-      setIsUsingChatGPT(false);
+      setIsAnalyzing(false);
     }
   };
 
-  // AI Vision Analysis using Agentuity Agent
-  const analyzeSceneWithAI = async (imageDataURL) => {
-    const agentuityApiKey = process.env.REACT_APP_AGENTUITY_API_KEY;
-    const webhookUrl = process.env.REACT_APP_AGENTUITY_WEBHOOK_URL;
-    
-    if (!agentuityApiKey || !webhookUrl) {
-      setChatGPTResult('Agentuity configuration missing. Please check environment variables.');
-      setAiAnalysisResult('Agentuity configuration missing. Please check environment variables.');
-      setShowAnalysisPanel(true);
-      return;
-    }
-
-    // Rate limiting check with more conservative timing
-    const now = Date.now();
-    const timeSinceLastCall = now - lastApiCall;
-    const minDelay = 5000; // 5 seconds between calls for Agentuity
-    
-    if (timeSinceLastCall < minDelay) {
-      const waitTime = Math.ceil((minDelay - timeSinceLastCall) / 1000);
-      const waitMessage = `⏱️ Rate Limiting Protection\n\nPlease wait ${waitTime} seconds before making another request.\n\nThis prevents overloading your Agentuity agent.`;
-      setAiAnalysisResult(waitMessage);
-      setShowAnalysisPanel(true);
-      return;
-    }
-
-    setLastApiCall(now);
-    setIsUsingChatGPT(true);
-    setChatGPTResult('🤖 Analyzing scene with your Agentuity AI Agent...');
-    setAiAnalysisResult('🤖 Analyzing scene with your Agentuity AI Agent...');
-    setShowAnalysisPanel(true);
-
-    try {
-      // Convert base64 image to blob for multipart upload
-      const response = await fetch(imageDataURL);
-      const blob = await response.blob();
-      
-      // Create FormData for the webhook
-      const formData = new FormData();
-      formData.append('image', blob, 'analysis.jpg');
-      formData.append('message', `Please provide a comprehensive analysis of this image. I want to understand everything that's happening in this scene. Please include:
-
-📋 **SCENE OVERVIEW:**
-- What type of environment is this? (classroom, office, meeting room, etc.)
-- What is the main focus or subject?
-
-🔍 **DETAILED OBSERVATIONS:**
-- All text visible (handwritten, printed, on boards, signs, etc.)
-- People present (count, what they're doing, clothing, gestures)
-- Objects and equipment (whiteboards, computers, furniture, tools)
-- Colors, lighting, and atmosphere
-
-📝 **TEXT CONTENT:**
-- Transcribe ALL visible text accurately
-- Note the context of each text element
-- Identify any diagrams, equations, or drawings
-
-🎯 **EDUCATIONAL CONTENT:**
-- If this appears to be educational, what subject/topic?
-- Key concepts being taught or discussed
-- Any visual aids or teaching materials
-
-📊 **SUMMARY:**
-- Main purpose/activity in this scene
-- Most important information conveyed
-- Overall assessment of what's happening
-
-Be thorough and detailed - I want to understand everything about this scene!`);
-
-      const webhookResponse = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${agentuityApiKey}`,
-          // Don't set Content-Type, let browser set it for FormData
-        },
-        body: formData
-      });
-
-      if (!webhookResponse.ok) {
-        let errorMessage = `Agentuity Agent Error: ${webhookResponse.status} ${webhookResponse.statusText}`;
-        
-        if (webhookResponse.status === 429) {
-          errorMessage = `⚠️ Rate Limit Exceeded\n\nYour Agentuity agent is temporarily overloaded. Please wait a moment and try again.`;
-        } else if (webhookResponse.status === 401) {
-          errorMessage = `🔑 Authentication Error\n\nYour Agentuity API key appears to be invalid. Please check your configuration.`;
-        } else if (webhookResponse.status === 400) {
-          errorMessage = `⚠️ Bad Request\n\nThere was an issue with the request. Please try again.`;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const data = await webhookResponse.json();
-      const analysis = data.response || data.message || data.content || 'Analysis complete - check with your agent for results';
-      
-      setChatGPTResult(analysis);
-      setAiAnalysisResult(analysis);
-      setShowAnalysisPanel(true);
-      
-      // Update the main detected text
-      setDetectedText(`🤖 Agentuity AI Analysis Complete! Check the analysis panel for detailed results.`);
-      
-    } catch (error) {
-      console.error('Agentuity Agent error:', error);
-      const errorMsg = `Error: ${error.message}`;
-      setChatGPTResult(errorMsg);
-      setAiAnalysisResult(errorMsg);
-      setShowAnalysisPanel(true);
-    } finally {
-      setIsUsingChatGPT(false);
-    }
-  };
-
-  // AI Agent for Q&A about analyzed content
-  // AI Agent Q&A using Agentuity Agent
-  const askQuestionAboutContent = async () => {
-    const agentuityApiKey = process.env.REACT_APP_AGENTUITY_API_KEY;
-    const webhookUrl = process.env.REACT_APP_AGENTUITY_WEBHOOK_URL;
-    
-    if (!agentuityApiKey || !webhookUrl) {
-      alert('Agentuity configuration missing. Please check environment variables.');
-      return;
-    }
-    
-    if (!userQuestion.trim()) {
+  const askEdith = async () => {
+    if (!question.trim()) {
       alert('Please enter a question');
       return;
     }
+    setIsAsking(true);
     
-    if (!aiAnalysisResult) {
-      alert('Please analyze some content first before asking questions');
-      return;
-    }
-
-    // Rate limiting check
-    const now = Date.now();
-    const timeSinceLastCall = now - lastApiCall;
-    const minDelay = 3000; // 3 seconds for Q&A with Agentuity
-    
-    if (timeSinceLastCall < minDelay) {
-      const waitTime = Math.ceil((minDelay - timeSinceLastCall) / 1000);
-      alert(`Please wait ${waitTime} seconds before asking another question.`);
-      return;
-    }
-
-    setLastApiCall(now);
-    setIsUsingChatGPT(true);
-
     try {
-      // Create the context-aware message for Agentuity
-      const contextualQuestion = `Based on my previous image analysis, please answer this question:
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const context = analysisResult ? 
+        `Based on this educational content analysis: ${analysisResult}\n\n` : 
+        'Based on the educational video content, ';
 
-PREVIOUS ANALYSIS CONTEXT:
-${aiAnalysisResult}
+      const prompt = `${context}Please answer this question in a helpful, educational manner: "${question}"
 
-CONVERSATION HISTORY:
-${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+Provide a clear, detailed response that:
+- Directly answers the question
+- Relates to the educational content if applicable
+- Includes examples or explanations when helpful
+- Uses a friendly, teaching tone`;
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      setEdithResponse(response.text());
+    } catch (error) {
+      console.error('Error asking EDITH:', error);
+      setEdithResponse(`❌ Error: ${error.message}\n\nPlease check your internet connection and API key.`);
+    } finally {
+      setIsAsking(false);
+    }
+  };
 
-CURRENT QUESTION: ${userQuestion}
+  // Capture current video frame for board analysis
+  const captureBoard = () => {
+    if (!videoRef.current) {
+      alert('Please load a video first');
+      return;
+    }
 
-Please provide a helpful answer based on the analysis and conversation context above.`;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const screenshot = canvas.toDataURL('image/png');
+    setBoardScreenshot(screenshot);
+    
+    // Automatically analyze the captured board
+    analyzeBoardContent(screenshot);
+  };
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${agentuityApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: contextualQuestion,
-          type: 'question'
-        })
-      });
+  // Analyze board content using AI
+  const analyzeBoardContent = async (imageData) => {
+    if (!imageData) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const base64Data = imageData.split(',')[1];
+      const prompt = `Analyze this whiteboard/screen capture and provide a detailed summary of:
 
-      if (!response.ok) {
-        let errorMessage = `Agentuity Agent Error: ${response.status} ${response.statusText}`;
-        
-        if (response.status === 429) {
-          errorMessage = `⚠️ Rate Limit Exceeded\n\nToo many questions too quickly. Please wait a moment before asking another question.`;
-        } else if (response.status === 401) {
-          errorMessage = `🔑 Authentication Error\n\nYour Agentuity API key appears to be invalid.`;
+📝 TEXT CONTENT: Any text, equations, formulas, or written content
+📊 VISUAL ELEMENTS: Diagrams, charts, graphs, drawings, or illustrations  
+🔢 MATHEMATICAL CONTENT: Equations, calculations, mathematical expressions
+📚 EDUCATIONAL TOPICS: What subjects or concepts are being taught
+🎯 KEY POINTS: Main ideas or learning objectives visible
+
+Please provide a comprehensive analysis of what's shown on this board/screen.`;
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: 'image/png'
+          }
         }
-        
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      const answer = data.response || data.message || data.content || 'Response received from agent';
+      ]);
       
-      // Add to conversation history
-      const newConversation = [
-        ...conversationHistory,
-        { role: "user", content: userQuestion },
-        { role: "assistant", content: answer }
-      ];
-      
-      // Keep only last 6 messages (3 Q&A pairs) to manage context length
-      const trimmedHistory = newConversation.slice(-6);
-      setConversationHistory(trimmedHistory);
-      
-      // Clear the input
-      setUserQuestion('');
-      
+      const response = await result.response;
+      setAnalysisResult(response.text());
     } catch (error) {
-      console.error('Agentuity Agent error:', error);
-      alert(`Error: ${error.message}`);
+      console.error('Board analysis error:', error);
+      setAnalysisResult(`❌ Board Analysis Error: ${error.message}`);
     } finally {
-      setIsUsingChatGPT(false);
+      setIsAnalyzing(false);
     }
   };
 
-  // Full Scene Analysis - capture frame and analyze everything with AI Vision
-  const analyzeCurrentScene = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setDetectedText('Video or canvas not available');
-      return;
-    }
+  const enableDrawing = () => {
+    setIsDrawing(!isDrawing);
+  };
 
-    setIsDetecting(true);
-    setDetectedText('📸 Capturing frame for AI analysis...');
-
-    try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
       const ctx = canvas.getContext('2d');
-
-      // Set canvas size and draw current frame
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        setDetectedText('Video not loaded properly');
-        setIsDetecting(false);
-        return;
-      }
-
-      // Draw current video frame without any preprocessing for AI Vision
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convert to data URL for AI Vision API
-      const dataURL = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG for smaller size
-      
-      // Run AI Vision analysis
-      await analyzeSceneWithAI(dataURL);
-      
-    } catch (error) {
-      console.error('Scene analysis failed:', error);
-      setDetectedText('Scene analysis failed: ' + error.message);
-    } finally {
-      setIsDetecting(false);
-    }
-  };
-
-  // Enhanced OCR with ChatGPT integration
-  const detectTextWithChatGPT = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setDetectedText('Video or canvas not available');
-      return;
-    }
-
-    setIsDetecting(true);
-    setDetectedText('Running OCR + ChatGPT analysis...');
-
-    try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-
-      // Set canvas size and draw current frame
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        setDetectedText('Video not loaded properly');
-        setIsDetecting(false);
-        return;
-      }
-
-      // Draw video frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      setDetectedText('Preprocessing image...');
-
-      // Apply image preprocessing for better OCR
-      preprocessImage(canvas, ctx);
-
-      // Get or initialize OCR worker
-      let worker = ocrWorker;
-      if (!worker) {
-        worker = await initializeOCR();
-      }
-
-      if (worker) {
-        setDetectedText('Running OCR...');
-        
-        // Convert processed canvas to data URL
-        const dataURL = canvas.toDataURL('image/png');
-        
-        const { data: { text, confidence } } = await worker.recognize(dataURL);
-        const ocrText = text.trim() || 'No text detected';
-        
-        setDetectedText(`OCR Result: ${ocrText}\n\nSending to ChatGPT for enhancement...`);
-        
-        // Send to ChatGPT for enhancement
-        await enhanceWithChatGPT(dataURL, ocrText);
-        
-      } else {
-        setDetectedText('OCR worker initialization failed');
-      }
-
-    } catch (error) {
-      console.error('OCR + ChatGPT detection failed:', error);
-      setDetectedText('Detection failed: ' + error.message);
-    } finally {
-      setIsDetecting(false);
-    }
-  };
-
-  // Auto-detect text and take screenshot
-  const detectAndCapture = async () => {
-    await detectText();
-    setTimeout(() => {
-      takeScreenshot();
-    }, 500); // Small delay to ensure text is updated
-  };
-
-  // Clear all screenshots
-  const clearScreenshots = () => {
-    screenshots.forEach(screenshot => {
-      if (screenshot.url) {
-        URL.revokeObjectURL(screenshot.url);
-      }
-    });
-    setScreenshots([]);
-  };
-
-  // Backend API Integration Functions
-  const API_BASE_URL = 'http://localhost:3000';
-
-  // Upload video to backend
-  const uploadVideoToBackend = async (videoFile) => {
-    const formData = new FormData();
-    formData.append('video', videoFile);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Backend upload error:', error);
-      throw error;
-    }
-  };
-
-  // Process video with backend
-  const processVideoWithBackend = async (videoPath, title = 'Untitled Lecture') => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ingest`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          videoPath,
-          title
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Processing failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Backend processing error:', error);
-      throw error;
-    }
-  };
-
-  // Query processed lecture
-  const queryLecture = async (lectureId, query) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          lectureId,
-          query
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Query failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Backend query error:', error);
-      throw error;
-    }
-  };
-
-  // Handle querying the backend
-  const handleBackendQuery = async () => {
-    if (!lectureId || !queryText.trim()) {
-      setQueryResult('Please ensure video is processed and enter a query');
-      return;
-    }
-
-    setIsQuerying(true);
-    setQueryResult('Analyzing lecture content...');
-
-    try {
-      const result = await queryLecture(lectureId, queryText.trim());
-      console.log('Query result:', result);
-      
-      let formattedResult = `Answer: ${result.answer}\n\n`;
-      
-      if (result.links && result.links.length > 0) {
-        formattedResult += 'Relevant timestamps:\n';
-        result.links.forEach(link => {
-          formattedResult += `• ${link.timecode}: ${link.text}\n`;
-        });
-        formattedResult += '\n';
-      }
-      
-      if (result.flashcards && result.flashcards.length > 0) {
-        formattedResult += 'Generated flashcard:\n';
-        result.flashcards.forEach(card => {
-          formattedResult += `Q: ${card.question}\nA: ${card.answer}\n`;
-        });
-      }
-      
-      setQueryResult(formattedResult);
-    } catch (error) {
-      console.error('Query failed:', error);
-      setQueryResult(`Query failed: ${error.message}`);
-    } finally {
-      setIsQuerying(false);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>� AI Scene Analyzer</h1>
-        <p>Upload videos and analyze everything with AI Vision + OCR text detection</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d30 100%)',
+      color: 'white',
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    }}>
+      <header style={{
+        textAlign: 'center',
+        padding: '30px 20px',
+        background: 'rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(10px)'
+      }}>
+        <h1 style={{ 
+          fontSize: '42px', 
+          margin: '0 0 15px 0',
+          textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+          fontWeight: '700'
+        }}>
+          🎓 Smart Lecture Board Analyzer
+        </h1>
+        <p style={{ 
+          fontSize: '20px', 
+          margin: '0',
+          opacity: '0.9',
+          fontWeight: '300'
+        }}>
+          AI-powered whiteboard content analysis and interactive Q&A
+        </p>
       </header>
 
-      <main className="App-main">
-        {/* File Upload */}
-        <div className="upload-section">
-          <label htmlFor="video-upload" className="upload-label">
-            Choose Video File
-          </label>
+      <main style={{
+        padding: '30px 20px',
+        maxWidth: '1400px',
+        margin: '0 auto'
+      }}>
+        {/* Upload Section with Enhanced Design */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '50px',
+          background: 'rgba(40, 40, 40, 0.8)',
+          padding: '40px',
+          borderRadius: '25px',
+          backdropFilter: 'blur(15px)',
+          border: '1px solid rgba(80, 80, 80, 0.3)',
+          boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)'
+        }}>
+          <h2 style={{ 
+            fontSize: '28px', 
+            marginBottom: '25px',
+            color: '#fff',
+            fontWeight: '600'
+          }}>
+            📁 Upload Your Educational Video
+          </h2>
           <input
-            id="video-upload"
             type="file"
             accept="video/*"
-            onChange={handleFileUpload}
-            className="file-input"
+            onChange={handleFileSelect}
+            ref={fileInputRef}
+            style={{ display: 'none' }}
           />
-          {!videoFile && (
-            <div className="upload-prompt">
-              <p>📹 Select a video file to get started</p>
-              <p><small>Supported formats: MP4, WebM, AVI</small></p>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              background: 'linear-gradient(45deg, #333, #555)',
+              color: 'white',
+              border: 'none',
+              padding: '25px 50px',
+              fontSize: '24px',
+              borderRadius: '50px',
+              cursor: 'pointer',
+              boxShadow: '0 15px 35px rgba(80, 80, 80, 0.4)',
+              transition: 'all 0.3s ease',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = 'translateY(-5px)';
+              e.target.style.boxShadow = '0 20px 40px rgba(255, 107, 107, 0.6)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 15px 35px rgba(255, 107, 107, 0.4)';
+            }}
+          >
+            🎬 Choose Video File
+          </button>
+          {selectedFile && (
+            <div style={{
+              marginTop: '25px',
+              fontSize: '18px',
+              background: 'rgba(76, 175, 80, 0.2)',
+              padding: '15px 25px',
+              borderRadius: '25px',
+              display: 'inline-block',
+              border: '2px solid rgba(76, 175, 80, 0.3)'
+            }}>
+              ✅ <strong>Ready:</strong> {selectedFile.name}
             </div>
           )}
         </div>
 
-        {/* Video Player */}
-        {videoURL && (
-          <div className="video-section">
-            {/* API Key Input */}
-            <div className="api-config">
-              <h3>🤖 AI-Powered Analysis</h3>
-              <div className="api-input-group">
-                <input
-                  type="password"
-                  placeholder="Enter your OpenAI API key..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="api-input"
-                />
-                <small className="api-help">
-                  Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Platform</a>
-                  <br />
-                  <strong>Features:</strong> OCR Enhancement + Full Scene Analysis with AI Vision
-                </small>
-              </div>
-            </div>
-
-            {/* Backend Integration Toggle */}
-            <div className="backend-config">
-              <h3>🚀 Backend Analysis</h3>
-              <div className="backend-toggle">
-                <label className="toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={isUsingBackend}
-                    onChange={(e) => setIsUsingBackend(e.target.checked)}
-                  />
-                  Use backend API for full lecture analysis
-                </label>
-                <small className="backend-help">
-                  Enable this to upload videos to the backend for comprehensive analysis including board change detection and Q&A capabilities
-                </small>
-              </div>
-              
-              {/* Upload/Processing Status */}
-              {uploadProgress && (
-                <div className="status-message upload-status">
-                  {uploadProgress}
-                </div>
-              )}
-              
-              {processingStatus && (
-                <div className="status-message processing-status">
-                  {processingStatus}
-                </div>
-              )}
-              
-              {/* Query Interface */}
-              {lectureId && (
-                <div className="query-section">
-                  <h4>🔍 Ask Questions About This Lecture</h4>
-                  <div className="query-input-group">
-                    <input
-                      type="text"
-                      placeholder="Ask a question about the lecture content..."
-                      value={queryText}
-                      onChange={(e) => setQueryText(e.target.value)}
-                      className="query-input"
-                      onKeyPress={(e) => e.key === 'Enter' && handleBackendQuery()}
-                    />
-                    <button
-                      onClick={handleBackendQuery}
-                      disabled={isQuerying || !queryText.trim()}
-                      className="query-button"
-                    >
-                      {isQuerying ? 'Analyzing...' : 'Ask Question'}
-                    </button>
-                  </div>
-                  
-                  {queryResult && (
-                    <div className="query-result">
-                      <h5>📋 Analysis Result:</h5>
-                      <pre className="result-text">{queryResult}</pre>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="video-container">
-              <video
-                ref={videoRef}
-                src={videoURL}
-                controls
-                className="video-player"
-              >
-                Your browser does not support the video tag.
-              </video>
-              <canvas ref={canvasRef} style={{ display: 'none' }} />
-            </div>
-
-            {/* Controls */}
-            <div className="controls">
-              <button onClick={takeScreenshot} className="btn primary">
-                📸 Screenshot
-              </button>
-              <button 
-                onClick={analyzeCurrentScene} 
-                disabled={isDetecting || !apiKey}
-                className="btn ai-vision primary-action"
-              >
-                {isDetecting ? '� Analyzing with AI...' : '� Analyze Full Scene with AI'}
-              </button>
-              <button 
-                onClick={initializeOCR} 
-                disabled={isDetecting}
-                className="btn info"
-              >
-                🔧 Initialize OCR
-              </button>
-              <button 
-                onClick={detectAndCapture} 
-                disabled={isDetecting}
-                className="btn highlight"
-              >
-                {isDetecting ? '⚡ Processing...' : '⚡ Detect & Capture'}
-              </button>
-              {screenshots.length > 0 && (
-                <button onClick={clearScreenshots} className="btn danger">
-                  🗑️ Clear All ({screenshots.length})
-                </button>
-              )}
-              <button 
-                onClick={() => {
-                  alert(`API Status:\n- API Key: ${apiKey ? 'Present' : 'Missing'}\n- Connection: Testing...\n\nCheck console for details.`);
-                  console.log('API Key Check:', { 
-                    hasKey: !!apiKey, 
-                    keyLength: apiKey?.length,
-                    keyStart: apiKey?.substring(0, 15) + '...',
-                    timestamp: new Date().toISOString()
-                  });
+        {/* Video Section with Enhanced Controls */}
+        {selectedFile && (
+          <div style={{
+            margin: '50px 0',
+            background: 'rgba(40, 40, 40, 0.8)',
+            padding: '40px',
+            borderRadius: '25px',
+            textAlign: 'center',
+            backdropFilter: 'blur(15px)',
+            border: '1px solid rgba(80, 80, 80, 0.3)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)'
+          }}>
+            <h2 style={{ 
+              fontSize: '28px', 
+              marginBottom: '25px',
+              color: '#fff',
+              fontWeight: '600'
+            }}>
+              🎥 Video Player & Analysis Tools
+            </h2>
+            <video
+              ref={videoRef}
+              controls
+              style={{
+                maxWidth: '100%',
+                height: 'auto',
+                borderRadius: '20px',
+                marginBottom: '35px',
+                boxShadow: '0 15px 35px rgba(0, 0, 0, 0.4)',
+                border: '3px solid rgba(255, 255, 255, 0.1)'
+              }}
+            />
+            
+            {/* Enhanced Control Buttons */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '20px',
+              maxWidth: '800px',
+              margin: '0 auto'
+            }}>
+              <button
+                onClick={analyzeVideo}
+                disabled={isAnalyzing}
+                style={{
+                  padding: '20px 30px',
+                  fontSize: '16px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  cursor: 'pointer',
+                  background: isAnalyzing 
+                    ? 'linear-gradient(45deg, #555, #777)' 
+                    : 'linear-gradient(45deg, #444, #666)',
+                  color: 'white',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
                 }}
-                className="btn info"
-                title="Test API connection and debug"
               >
-                🔧 Test API
+                {isAnalyzing ? '🔄 Analyzing...' : '🤖 Analyze Entire Video'}
+              </button>
+
+              <button
+                onClick={testApiKey}
+                style={{
+                  padding: '20px 30px',
+                  fontSize: '16px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(45deg, #28a745, #20c997)',
+                  color: 'white',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                🔑 Test API Key
+              </button>
+
+              <button
+                onClick={captureBoard}
+                style={{
+                  padding: '20px 30px',
+                  fontSize: '16px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(45deg, #444, #666)',
+                  color: 'white',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                📸 Capture Current Board
+              </button>
+
+              <button
+                onClick={enableDrawing}
+                style={{
+                  padding: '20px 30px',
+                  fontSize: '16px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  cursor: 'pointer',
+                  background: isDrawing
+                    ? 'linear-gradient(45deg, #666, #888)'
+                    : 'linear-gradient(45deg, #444, #666)',
+                  color: 'white',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                {isDrawing ? '✏️ Drawing Mode ON' : '✏️ Enable Drawing'}
+              </button>
+
+              <button
+                onClick={clearCanvas}
+                style={{
+                  padding: '20px 30px',
+                  fontSize: '16px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(45deg, #666, #888)',
+                  color: 'white',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                🗑️ Clear All Drawing
               </button>
             </div>
 
-            {/* Detected Text Display */}
-            <div className="text-detection">
-              <h3>🔍 Detected Text:</h3>
-              <div className="detected-text-box">
-                {detectedText || 'Click "Detect Text" to analyze the current frame'}
+            {/* Board Screenshot Preview */}
+            {boardScreenshot && (
+              <div style={{
+                marginTop: '30px',
+                padding: '20px',
+                background: 'rgba(0, 0, 0, 0.3)',
+                borderRadius: '15px',
+                border: '2px solid rgba(76, 175, 80, 0.3)'
+              }}>
+                <h3 style={{ color: '#4ecdc4', marginBottom: '15px' }}>📸 Captured Board Content:</h3>
+                <img 
+                  src={boardScreenshot} 
+                  alt="Board capture" 
+                  style={{
+                    maxWidth: '300px',
+                    height: 'auto',
+                    borderRadius: '10px',
+                    border: '2px solid rgba(255, 255, 255, 0.2)'
+                  }}
+                />
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Enhanced Analysis Results Section */}
+        {analysisResult && (
+          <div style={{
+            background: 'rgba(40, 40, 40, 0.9)',
+            margin: '50px 0',
+            padding: '50px',
+            borderRadius: '30px',
+            border: '2px solid rgba(80, 80, 80, 0.3)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(20px)'
+          }}>
+            <h2 style={{
+              fontSize: '36px',
+              marginBottom: '35px',
+              textAlign: 'center',
+              textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+              background: 'linear-gradient(45deg, #ccc, #fff)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: '700'
+            }}>
+              🧠 AI Analysis Results
+            </h2>
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.4)',
+              padding: '40px',
+              borderRadius: '20px',
+              minHeight: '250px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                right: '20px',
+                background: 'rgba(76, 175, 80, 0.2)',
+                padding: '8px 15px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                color: '#4CAF50',
+                fontWeight: '600',
+                border: '1px solid rgba(76, 175, 80, 0.3)'
+              }}>
+                ✨ AI POWERED
+              </div>
+              <pre style={{
+                fontSize: '18px',
+                lineHeight: '1.8',
+                color: '#fff',
+                textAlign: 'left',
+                whiteSpace: 'pre-wrap',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                margin: 0,
+                paddingTop: '20px'
+              }}>
+                {analysisResult}
+              </pre>
             </div>
           </div>
         )}
 
-        {/* Screenshots Gallery */}
-        {/* AI Vision Analysis Panel */}
-        {showAnalysisPanel && aiAnalysisResult && (
-          <div className="ai-analysis-panel">
-            <div className="panel-header">
-              <h3>🛸 AI Vision Analysis Results</h3>
-              <button 
-                onClick={() => setShowAnalysisPanel(false)}
-                className="close-panel-btn"
+        {/* Enhanced EDITH Questions Section */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.12)',
+          padding: '50px',
+          borderRadius: '30px',
+          margin: '50px 0',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)'
+        }}>
+          <h2 style={{
+            fontSize: '32px',
+            marginBottom: '35px',
+            textAlign: 'center',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+            fontWeight: '700'
+          }}>
+            💬 Ask EDITH - Your AI Teaching Assistant
+          </h2>
+          
+          <p style={{
+            textAlign: 'center',
+            fontSize: '18px',
+            marginBottom: '30px',
+            opacity: '0.9',
+            fontStyle: 'italic'
+          }}>
+            Get detailed explanations about the board content, ask for clarifications, or explore related concepts!
+          </p>
+
+          <div style={{
+            display: 'flex',
+            gap: '20px',
+            marginBottom: '35px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="e.g., 'Explain the main equation shown' or 'What is the key concept here?'"
+              style={{
+                flex: 1,
+                minWidth: '400px',
+                padding: '25px 30px',
+                fontSize: '18px',
+                border: '3px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '25px',
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: 'white',
+                backdropFilter: 'blur(10px)',
+                outline: 'none',
+                transition: 'all 0.3s ease'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(78, 205, 196, 0.8)';
+                e.target.style.boxShadow = '0 0 20px rgba(78, 205, 196, 0.3)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                e.target.style.boxShadow = 'none';
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && askEdith()}
+            />
+            <button
+              onClick={askEdith}
+              disabled={isAsking}
+              style={{
+                padding: '25px 45px',
+                fontSize: '18px',
+                border: 'none',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                background: isAsking 
+                  ? 'linear-gradient(45deg, #95a5a6, #7f8c8d)'
+                  : 'linear-gradient(45deg, #a8edea, #fed6e3)',
+                color: '#333',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {isAsking ? '🤔 Thinking...' : '🚀 Ask EDITH'}
+            </button>
+          </div>
+
+          {/* Sample Questions */}
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginBottom: '30px'
+          }}>
+            {[
+              'Explain the main concept',
+              'What does this equation mean?',
+              'How is this used in practice?',
+              'Can you break this down step by step?'
+            ].map((sampleQ, index) => (
+              <button
+                key={index}
+                onClick={() => setQuestion(sampleQ)}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '20px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
               >
-                ✕
+                💡 {sampleQ}
               </button>
-            </div>
-            <div className="analysis-content">
-              <div className="analysis-section">
-                <h4>📊 Scene Analysis</h4>
-                <pre className="analysis-text">{aiAnalysisResult}</pre>
-              </div>
-              
-              {/* AI Agent Q&A Interface */}
-              <div className="qa-section">
-                <h4>🤖 Ask Questions About This Content</h4>
-                <div className="qa-input-group">
-                  <input
-                    type="text"
-                    placeholder="Ask a question about what you see in the image..."
-                    value={userQuestion}
-                    onChange={(e) => setUserQuestion(e.target.value)}
-                    className="qa-input"
-                    onKeyPress={(e) => e.key === 'Enter' && askQuestionAboutContent()}
-                    disabled={isUsingChatGPT}
-                  />
-                  <button
-                    onClick={askQuestionAboutContent}
-                    disabled={isUsingChatGPT || !userQuestion.trim()}
-                    className="qa-button"
-                  >
-                    {isUsingChatGPT ? '🤔 Thinking...' : '💬 Ask'}
-                  </button>
-                </div>
-                
-                {/* Conversation History */}
-                {conversationHistory.length > 0 && (
-                  <div className="conversation-history">
-                    <h5>💭 Conversation</h5>
-                    <div className="conversation-messages">
-                      {conversationHistory.map((message, index) => (
-                        <div 
-                          key={index} 
-                          className={`message ${message.role === 'user' ? 'user-message' : 'ai-message'}`}
-                        >
-                          <div className="message-role">
-                            {message.role === 'user' ? '👤 You:' : '🤖 AI:'}
-                          </div>
-                          <div className="message-content">{message.content}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <button 
-                      onClick={() => setConversationHistory([])}
-                      className="clear-conversation-btn"
-                    >
-                      🗑️ Clear Conversation
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
-        )}
 
-        {/* Screenshots Gallery */}
-        {screenshots.length > 0 && (
-          <div className="gallery-section">
-            <h3>📱 Screenshots ({screenshots.length})</h3>
-            <div className="gallery">
-              {screenshots.map((screenshot) => (
-                <div key={screenshot.id} className="screenshot-item">
-                  <img 
-                    src={screenshot.url} 
-                    alt={`Screenshot at ${screenshot.timestamp.toFixed(1)}s`}
-                    className="screenshot-image"
-                  />
-                  <div className="screenshot-info">
-                    <p><strong>⏱️ Time:</strong> {screenshot.timestamp.toFixed(1)}s</p>
-                    <p><strong>📝 Text:</strong> {screenshot.detectedText}</p>
-                  </div>
-                </div>
-              ))}
+          {edithResponse && (
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              padding: '40px',
+              borderRadius: '25px',
+              borderLeft: '8px solid #4ecdc4',
+              minHeight: '150px',
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                right: '20px',
+                background: 'rgba(78, 205, 196, 0.2)',
+                padding: '8px 15px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                color: '#4ecdc4',
+                fontWeight: '600',
+                border: '1px solid rgba(78, 205, 196, 0.3)'
+              }}>
+                🤖 EDITH AI
+              </div>
+              <h3 style={{
+                color: '#4ecdc4',
+                marginBottom: '25px',
+                fontSize: '24px',
+                textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)',
+                fontWeight: '600'
+              }}>
+                � EDITH's Response:
+              </h3>
+              <div style={{
+                fontSize: '18px',
+                lineHeight: '1.8',
+                textAlign: 'left',
+                color: '#fff',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                whiteSpace: 'pre-wrap'
+              }}>
+                {edithResponse}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );
